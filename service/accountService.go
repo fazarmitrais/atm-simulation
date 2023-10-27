@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	errorlib "github.com/fazarmitrais/atm-simulation/errorlib"
+	"github.com/fazarmitrais/atm-simulation/lib/responseFormatter"
 )
 
 /*
@@ -54,21 +54,21 @@ func initData() {
 		AccountNumber: "112244"}
 }
 
-func (s *Service) PINValidation(c context.Context, account Account) *errorlib.CustomError {
+func (s *Service) PINValidation(c context.Context, account Account) *responseFormatter.ResponseFormatter {
 	if strings.Trim(account.AccountNumber, " ") == "" {
-		return errorlib.New(http.StatusBadRequest, "Account Number is required")
+		return responseFormatter.New(http.StatusBadRequest, "Account Number is required", true)
 	} else if strings.Trim(account.PIN, " ") == "" {
-		return errorlib.New(http.StatusBadRequest, "PIN is required")
+		return responseFormatter.New(http.StatusBadRequest, "PIN is required", true)
 	} else if len(account.AccountNumber) < 6 {
-		return errorlib.New(http.StatusBadRequest, "Account Number should have 6 digits length")
+		return responseFormatter.New(http.StatusBadRequest, "Account Number should have 6 digits length", true)
 	} else if len(account.PIN) < 6 {
-		return errorlib.New(http.StatusBadRequest, "PIN should have 6 digits length")
+		return responseFormatter.New(http.StatusBadRequest, "PIN should have 6 digits length", true)
 	} else if _, err := strconv.Atoi(account.AccountNumber); err != nil {
-		return errorlib.New(http.StatusBadRequest, "Account Number should only contains numbers")
+		return responseFormatter.New(http.StatusBadRequest, "Account Number should only contains numbers", true)
 	} else if _, err := strconv.Atoi(account.PIN); err != nil {
-		return errorlib.New(http.StatusBadRequest, "PIN should only contains numbers")
+		return responseFormatter.New(http.StatusBadRequest, "PIN should only contains numbers", true)
 	} else if accMap[account.AccountNumber] == nil || accMap[account.AccountNumber].PIN != account.PIN {
-		return errorlib.New(http.StatusBadRequest, "Invalid Account Number/PIN")
+		return responseFormatter.New(http.StatusBadRequest, "Invalid Account Number/PIN", true)
 	}
 	return nil
 }
