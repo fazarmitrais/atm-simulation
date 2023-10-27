@@ -75,7 +75,7 @@ func (re *Rest) PINValidation(w http.ResponseWriter, r *http.Request) {
 	}
 	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
 	if err != nil {
-		responseFormatter.New(http.StatusBadRequest,
+		responseFormatter.New(http.StatusInternalServerError,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
 			ReturnAsJson(w)
 		return
@@ -89,13 +89,18 @@ func (re *Rest) PINValidation(w http.ResponseWriter, r *http.Request) {
 func (re *Rest) Withdraw(w http.ResponseWriter, r *http.Request) {
 	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
 	if err != nil {
-		responseFormatter.New(http.StatusBadRequest,
+		responseFormatter.New(http.StatusInternalServerError,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
 			ReturnAsJson(w)
 		return
 	}
 	amountStr := r.URL.Query().Get("amount")
-	amount, _ := strconv.Atoi(amountStr)
+	amount, err := strconv.Atoi(amountStr)
+	if err != nil {
+		responseFormatter.New(http.StatusBadRequest, "Invalid ammount", true).
+			ReturnAsJson(w)
+		return
+	}
 	acc, resp := re.service.Withdraw(r.Context(), fmt.Sprintf("%v", cookieStore.Values["acctNbr"]), float64(amount))
 	if resp != nil {
 		resp.ReturnAsJson(w)

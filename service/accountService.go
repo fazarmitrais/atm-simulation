@@ -57,9 +57,11 @@ func (s *Service) Withdraw(ctx context.Context, accountNumber string, withdrawAm
 		return nil, responseFormatter.New(http.StatusBadRequest, "Account Number is required", true)
 	} else if withdrawAmount <= 0 {
 		return nil, responseFormatter.New(http.StatusBadRequest, "Invalid withdraw amount", true)
+	} else if withdrawAmount > 1000 {
+		return nil, responseFormatter.New(http.StatusBadRequest, "Maximum amount to withdraw is $1000", true)
 	}
 	if accMap[accountNumber].Balance < withdrawAmount {
-		return nil, responseFormatter.New(http.StatusBadRequest, fmt.Sprintf("Insufficient balance $%f", accMap[accountNumber].Balance), true)
+		return nil, responseFormatter.New(http.StatusBadRequest, fmt.Sprintf("Insufficient balance $%0.f", accMap[accountNumber].Balance), true)
 	}
 	accMap[accountNumber].Balance -= withdrawAmount
 	return accMap[accountNumber], nil
