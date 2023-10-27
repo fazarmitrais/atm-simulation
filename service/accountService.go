@@ -2,34 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/fazarmitrais/atm-simulation/lib/responseFormatter"
 )
-
-/*
-  --
-   - Name          : John Doe
-     PIN           : 012108
-     Balance       : $100
-     Account Number: 112233
-
-   - Name          : Jane Doe
-
-     PIN           : 932012
-
-     Balance       : $30
-
-     Account Number: 112244
-- Account Number should have 6 digits length. Display message `Account Number should have 6 digits length` for invalid Account Number.
-  - Account Number should only contains numbers [0-9]. Display message `Account Number should only contains numbers` for invalid Account Number.
-  - PIN should have 6 digits length. Display message `PIN should have 6 digits length` for invalid PIN.
-  - PIN should only contains numbers [0-9]. Display message `PIN should only contains numbers` for invalid PIN.
-  - Check valid Acccount Number & PIN with ATM records. Display message `Invalid Account Number/PIN` if records is not exist.
-  - Valid Account Number & PIN will take user to __Transaction Screen__.
-*/
 
 type Account struct {
 	Name          string  `json:"name"`
@@ -71,4 +50,17 @@ func (s *Service) PINValidation(c context.Context, account Account) *responseFor
 		return responseFormatter.New(http.StatusBadRequest, "Invalid Account Number/PIN", true)
 	}
 	return nil
+}
+
+func (s *Service) Withdraw(ctx context.Context, accountNumber string, withdrawAmount float64) (*Account, *responseFormatter.ResponseFormatter) {
+	if accountNumber == "" {
+		return nil, responseFormatter.New(http.StatusBadRequest, "Account Number is required", true)
+	} else if withdrawAmount <= 0 {
+		return nil, responseFormatter.New(http.StatusBadRequest, "Invalid withdraw amount", true)
+	}
+	if accMap[accountNumber].Balance < withdrawAmount {
+		return nil, responseFormatter.New(http.StatusBadRequest, fmt.Sprintf("Insufficient balance $%f", accMap[accountNumber].Balance), true)
+	}
+	accMap[accountNumber].Balance -= withdrawAmount
+	return accMap[accountNumber], nil
 }
