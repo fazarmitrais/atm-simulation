@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/fazarmitrais/atm-simulation/cookie"
+	"github.com/fazarmitrais/atm-simulation/lib/envLib"
 	"github.com/fazarmitrais/atm-simulation/lib/responseFormatter"
 )
 
@@ -12,7 +13,7 @@ type Middleware func(http.HandlerFunc) http.HandlerFunc
 func Required(cookie *cookie.Cookie) Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			session, err := cookie.Store.Get(r, "cookie-store")
+			session, err := cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 			if err != nil {
 				responseFormatter.New(http.StatusInternalServerError, "Failed to get cookies", true).ReturnAsJson(w)
 				return

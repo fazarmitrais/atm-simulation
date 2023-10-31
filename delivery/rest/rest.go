@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/fazarmitrais/atm-simulation/cookie"
+	"github.com/fazarmitrais/atm-simulation/domain/entity"
+	"github.com/fazarmitrais/atm-simulation/lib/envLib"
 	"github.com/fazarmitrais/atm-simulation/lib/responseFormatter"
 	middleware "github.com/fazarmitrais/atm-simulation/middleware"
 	"github.com/fazarmitrais/atm-simulation/service"
@@ -38,7 +40,7 @@ func (re *Rest) Register(m *mux.Router) {
 }
 
 func (re *Rest) BalanceCheck(w http.ResponseWriter, r *http.Request) {
-	cok, err := re.cookie.Store.Get(r, "cookie-store")
+	cok, err := re.cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 	if err != nil {
 		responseFormatter.New(http.StatusBadRequest, "Error getting data from cookies", true)
 		return
@@ -54,7 +56,7 @@ func (re *Rest) BalanceCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (re *Rest) Exit(w http.ResponseWriter, r *http.Request) {
-	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
+	cookieStore, err := re.cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 	if err != nil {
 		responseFormatter.New(http.StatusBadRequest,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
@@ -77,7 +79,7 @@ func (re *Rest) PINValidation(w http.ResponseWriter, r *http.Request) {
 			ReturnAsJson(w)
 		return
 	}
-	var acc service.Account
+	var acc entity.Account
 	err = json.Unmarshal(b, &acc)
 	if err != nil {
 		responseFormatter.New(http.StatusBadRequest,
@@ -90,7 +92,7 @@ func (re *Rest) PINValidation(w http.ResponseWriter, r *http.Request) {
 		errl.ReturnAsJson(w)
 		return
 	}
-	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
+	cookieStore, err := re.cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 	if err != nil {
 		responseFormatter.New(http.StatusInternalServerError,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
@@ -104,7 +106,7 @@ func (re *Rest) PINValidation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (re *Rest) Withdraw(w http.ResponseWriter, r *http.Request) {
-	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
+	cookieStore, err := re.cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 	if err != nil {
 		responseFormatter.New(http.StatusInternalServerError,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
@@ -141,7 +143,7 @@ func (re *Rest) Withdraw(w http.ResponseWriter, r *http.Request) {
 }
 
 func (re *Rest) Transfer(w http.ResponseWriter, r *http.Request) {
-	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
+	cookieStore, err := re.cookie.Store.Get(r, envLib.GetEnv("COOKIE_STORE_NAME"))
 	if err != nil {
 		responseFormatter.New(http.StatusInternalServerError,
 			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
@@ -155,7 +157,7 @@ func (re *Rest) Transfer(w http.ResponseWriter, r *http.Request) {
 			ReturnAsJson(w)
 		return
 	}
-	var transfer service.Transfer
+	var transfer entity.Transfer
 	err = json.Unmarshal(b, &transfer)
 	if err != nil {
 		responseFormatter.New(http.StatusBadRequest,

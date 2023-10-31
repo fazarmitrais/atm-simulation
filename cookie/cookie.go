@@ -1,13 +1,16 @@
 package cookie
 
-import "github.com/gorilla/sessions"
+import (
+	"github.com/fazarmitrais/atm-simulation/lib/envLib"
+	"github.com/gorilla/sessions"
+)
 
 type Cookie struct {
 	Store *sessions.CookieStore
 }
 
 func New() *Cookie {
-	key := []byte("super-secret-key")
+	key := []byte(envLib.GetEnv("COOKIE_SECRET_KEY"))
 	store := sessions.NewCookieStore(key)
 	return &Cookie{Store: store}
 }
