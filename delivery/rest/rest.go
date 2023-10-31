@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/fazarmitrais/atm-simulation/cookie"
 	"github.com/fazarmitrais/atm-simulation/lib/responseFormatter"
@@ -32,8 +31,26 @@ func New(svc *service.Service) *Rest {
 func (re *Rest) Register(m *mux.Router) {
 	m = m.PathPrefix("/api/v1/account").Subrouter()
 	m.HandleFunc("/validate", re.PINValidation).Methods(http.MethodPost)
-	m.HandleFunc("/withdraw", middleware.Chain(re.Withdraw, middleware.Required(re.cookie))).Methods(http.MethodGet)
+	m.HandleFunc("/withdraw", middleware.Chain(re.Withdraw, middleware.Required(re.cookie))).Methods(http.MethodPost)
+	m.HandleFunc("/transfer", middleware.Chain(re.Transfer, middleware.Required(re.cookie))).Methods(http.MethodPost)
+	m.HandleFunc("/balance", middleware.Chain(re.BalanceCheck, middleware.Required(re.cookie))).Methods(http.MethodGet)
 	m.HandleFunc("/exit", re.Exit).Methods(http.MethodGet)
+}
+
+func (re *Rest) BalanceCheck(w http.ResponseWriter, r *http.Request) {
+	cok, err := re.cookie.Store.Get(r, "cookie-store")
+	if err != nil {
+		responseFormatter.New(http.StatusBadRequest, "Error getting data from cookies", true)
+		return
+	}
+	acct, resp := re.service.BalanceCheck(r.Context(), cok.Values["acctNbr"].(string))
+	if resp != nil {
+		resp.ReturnAsJson(w)
+		return
+	}
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(acct)
+	return
 }
 
 func (re *Rest) Exit(w http.ResponseWriter, r *http.Request) {
@@ -94,14 +111,60 @@ func (re *Rest) Withdraw(w http.ResponseWriter, r *http.Request) {
 			ReturnAsJson(w)
 		return
 	}
-	amountStr := r.URL.Query().Get("amount")
-	amount, err := strconv.Atoi(amountStr)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		responseFormatter.New(http.StatusBadRequest, "Invalid ammount", true).
+		responseFormatter.New(http.StatusBadRequest,
+			fmt.Sprintf("Failed unmarshalling json : %s", err.Error()), true).
 			ReturnAsJson(w)
 		return
 	}
-	acc, resp := re.service.Withdraw(r.Context(), fmt.Sprintf("%v", cookieStore.Values["acctNbr"]), float64(amount))
+	type transferAmount struct {
+		Amount float64 `json:"amount"`
+	}
+	amt := transferAmount{}
+	err = json.Unmarshal(b, &amt)
+	if err != nil {
+		responseFormatter.New(http.StatusBadRequest,
+			fmt.Sprintf("Failed unmarshalling json : %s", err.Error()), true).
+			ReturnAsJson(w)
+		return
+	}
+	acc, resp := re.service.Withdraw(r.Context(), fmt.Sprintf("%v", cookieStore.Values["acctNbr"]), amt.Amount)
+	if resp != nil {
+		resp.ReturnAsJson(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(acc)
+}
+
+func (re *Rest) Transfer(w http.ResponseWriter, r *http.Request) {
+	cookieStore, err := re.cookie.Store.Get(r, "cookie-store")
+	if err != nil {
+		responseFormatter.New(http.StatusInternalServerError,
+			fmt.Sprintf("Error getting cookie store : %s", err.Error()), true).
+			ReturnAsJson(w)
+		return
+	}
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		responseFormatter.New(http.StatusBadRequest,
+			fmt.Sprintf("Failed unmarshalling json : %s", err.Error()), true).
+			ReturnAsJson(w)
+		return
+	}
+	var transfer service.Transfer
+	err = json.Unmarshal(b, &transfer)
+	if err != nil {
+		responseFormatter.New(http.StatusBadRequest,
+			fmt.Sprintf("Failed unmarshalling json : %s", err.Error()), true).
+			ReturnAsJson(w)
+		return
+	}
+	transfer.FromAccountNumber = cookieStore.Values["acctNbr"].(string)
+	acc, resp := re.service.Transfer(r.Context(), transfer)
 	if resp != nil {
 		resp.ReturnAsJson(w)
 		return

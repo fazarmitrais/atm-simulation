@@ -16,4 +16,6 @@ func New() *Service {
 
 type ServiceInterface interface {
 	PINValidation(c context.Context, account Account) *responseFormatter.ResponseFormatter
+	Transfer(ctx, transfer Transfer) (*Account, *responseFormatter.ResponseFormatter)
+	BalanceCheck(ctx context.Context, acctNbr string) (*Account, *responseFormatter.ResponseFormatter)
 }
